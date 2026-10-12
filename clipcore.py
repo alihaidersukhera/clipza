@@ -1,4 +1,4 @@
-"""ClipKaro core logic — no Streamlit imports here so it can be tested standalone.
+"""Clipza core logic — no Streamlit imports here so it can be tested standalone.
 
 Pipeline: extract audio -> transcribe (faster-whisper) -> find best moments
 (heuristic scoring, or Gemini when an API key is supplied) -> cut 9:16 clips
@@ -200,7 +200,7 @@ def detect_moments_gemini(segments, api_key, count=5, duration=0.0):
         "generationConfig": {"temperature": 0.4},
     }).encode("utf-8")
     url = ("https://generativelanguage.googleapis.com/v1beta/models/"
-           f"gemini-2.0-flash:generateContent?key={api_key}")
+           f"gemini-3.8-flash:generateContent?key={api_key}")
     req = urllib.request.Request(url, data=payload,
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=120) as resp:

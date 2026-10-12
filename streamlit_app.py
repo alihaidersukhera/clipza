@@ -84,9 +84,17 @@ with st.sidebar:
     layout = "blur" if layout_label.startswith("Blur") else "crop"
     st.markdown("---")
     st.markdown("**🤖 Smart AI detection (optional)**")
-    gemini_key = st.text_input(
+    _secret_key = ""
+    try:
+        _secret_key = st.secrets.get("GEMINI_API_KEY", "") or ""
+    except Exception:
+        _secret_key = ""
+    gemini_key_input = st.text_input(
         "Gemini API key", type="password",
         help="Free key from Google AI Studio. Without one, the built-in detection is used.")
+    gemini_key = gemini_key_input or _secret_key
+    if _secret_key and not gemini_key_input:
+        st.caption("✅ Gemini AI is connected — smart detection is ON.")
     st.markdown("---")
     st.markdown("<span class='ck-muted'>Clipza by <b>JONNY PRODUCTIONS</b><br>"
                 "Clean clips — no burned-in captions.</span>",
