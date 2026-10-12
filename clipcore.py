@@ -92,9 +92,16 @@ def get_model(model_size="small"):
 
 
 def transcribe(wav_path, language=None, model_size="small"):
-    """Return list of {start, end, text} segment dicts."""
+    """Return list of {start, end, text} segment dicts.
+
+    The WAV is decoded here (stdlib wave) and raw samples are handed to the
+    model: faster-whisper's own decode_audio() calls PyAV's av.open() with a
+    'metadata_errors' argument that PyAV removed in v14, which crashes on
+    hosts with a newer PyAV. Passing an array skips that call entirely.
+    """
     model = get_model(model_size)
-    segments, _info = model.transcribe(wav_path, language=language, vad_filter=True)
+    samples, _rate = _load_samples(wav_path)
+    segments, _info = model.transcribe(samples, language=language, vad_filter=True)
     out = []
     for seg in segments:
         text = (seg.text or "").strip()
