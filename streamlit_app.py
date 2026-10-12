@@ -58,8 +58,8 @@ st.markdown("""
 </style>
 <div class="ck-hero">
   <h1>✂️ Clipza</h1>
-  <p>Lambi video do — AI behtareen moments dhoond kar <b>9:16 Shorts / Reels / TikTok</b>
-  clips bana dega. Whop Content Rewards ke liye ready package ke saath.</p>
+  <p>Give it a long video — AI finds the best moments and turns them into <b>9:16 Shorts / Reels / TikTok</b>
+  clips. With a ready-to-post Whop Content Rewards package.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -73,57 +73,57 @@ for key, default in [("video_path", None), ("video_name", ""), ("duration", 0.0)
 # ----------------------------------------------------------------- sidebar ---
 with st.sidebar:
     st.markdown("### ⚙️ Settings")
-    language = st.selectbox("Video ki language",
+    language = st.selectbox("Video language",
                             ["Auto-detect", "Urdu", "Hindi", "English"])
     lang_code = {"Auto-detect": None, "Urdu": "ur", "Hindi": "hi",
                  "English": "en"}[language]
-    clip_count = st.slider("Kitne clips chahiye?", 1, 8, 5)
+    clip_count = st.slider("How many clips?", 1, 8, 5)
     layout_label = st.radio("Clip style",
-                            ["Blur Fit — poora frame dikhega",
-                             "Full Crop — screen bhari hui"])
+                            ["Blur Fit — full frame visible",
+                             "Full Crop — fills the screen"])
     layout = "blur" if layout_label.startswith("Blur") else "crop"
     st.markdown("---")
     st.markdown("**🤖 Smart AI detection (optional)**")
     gemini_key = st.text_input(
         "Gemini API key", type="password",
-        help="Free key Google AI Studio se milti hai. Na ho to basic detection khud chalegi.")
+        help="Free key from Google AI Studio. Without one, the built-in detection is used.")
     st.markdown("---")
     st.markdown("<span class='ck-muted'>Clipza by <b>JONNY PRODUCTIONS</b><br>"
-                "Clean clips — koi burned-in captions nahi.</span>",
+                "Clean clips — no burned-in captions.</span>",
                 unsafe_allow_html=True)
 
 # -------------------------------------------------------------- step 1: file --
-st.markdown("<div class='ck-step'>Step 1 — Video upload karo</div>",
+st.markdown("<div class='ck-step'>Step 1 — Upload your video</div>",
             unsafe_allow_html=True)
-uploaded = st.file_uploader("MP4 / MOV / MKV / WEBM (max ~200MB, 60 min tak best)",
+uploaded = st.file_uploader("MP4 / MOV / MKV / WEBM (max ~200MB, up to ~60 min works best)",
                             type=["mp4", "mov", "mkv", "webm"])
 if uploaded is not None and uploaded.name != st.session_state.video_name:
-    workdir = tempfile.mkdtemp(prefix="clipkaro_")
+    workdir = tempfile.mkdtemp(prefix="clipza_")
     path = os.path.join(workdir, uploaded.name)
     with open(path, "wb") as f:
         f.write(uploaded.getbuffer())
     st.session_state.update(video_path=path, video_name=uploaded.name,
                             workdir=workdir, segments=None, moments=None,
                             clips=None, duration=clipcore.probe_duration(path))
-    st.success(f"Video mil gayi: **{uploaded.name}** "
-               f"({clipcore.fmt_time(st.session_state.duration)} lambi)")
+    st.success(f"Video received: **{uploaded.name}** "
+               f"({clipcore.fmt_time(st.session_state.duration)} long)")
 
 if st.session_state.video_path:
     st.video(st.session_state.video_path)
 
     # ----------------------------------------------------- step 2: moments --
-    st.markdown("<div class='ck-step'>Step 2 — Best moments dhoondo</div>",
+    st.markdown("<div class='ck-step'>Step 2 — Find the best moments</div>",
                 unsafe_allow_html=True)
-    if st.button("🔍 Moments dhoondo", type="primary"):
-        with st.spinner("Pehle transcript ban raha hai, phir moments chune jayenge... "
-                        "Lambi video par kuch minute lag sakte hain."):
+    if st.button("🔍 Find moments", type="primary"):
+        with st.spinner("Transcribing first, then picking the best moments... "
+                        "Long videos can take a few minutes."):
             try:
                 wav = os.path.join(st.session_state.workdir, "audio.wav")
                 clipcore.extract_audio(st.session_state.video_path, wav)
                 segments = clipcore.transcribe(wav, language=lang_code)
                 st.session_state.segments = segments
                 if not segments:
-                    st.error("Video mein boli hui awaz nahi mili — moments nahi bann sakte.")
+                    st.error("No speech found in this video — moments can't be detected.")
                 else:
                     moments = None
                     if gemini_key:
@@ -131,10 +131,10 @@ if st.session_state.video_path:
                             moments = clipcore.detect_moments_gemini(
                                 segments, gemini_key, count=clip_count,
                                 duration=st.session_state.duration)
-                            st.info("🤖 Moments Gemini AI ne chune hain.")
+                            st.info("🤖 Moments picked by Gemini AI.")
                         except Exception as exc:  # fall back silently to heuristic
-                            st.warning(f"Gemini se nahi ho paya ({exc}). "
-                                       "Basic detection use ho rahi hai.")
+                            st.warning(f"Gemini didn't work ({exc}). "
+                                       "Using the built-in detection instead.")
                     if moments is None:
                         moments = clipcore.detect_moments_heuristic(
                             segments, wav, count=clip_count,
@@ -142,11 +142,11 @@ if st.session_state.video_path:
                     st.session_state.moments = moments
                     st.session_state.clips = None
             except Exception as exc:
-                st.error(f"Masla aaya: {exc}")
+                st.error(f"Something went wrong: {exc}")
 
     # -------------------------------------------------- step 3: pick & edit --
     if st.session_state.moments:
-        st.markdown("<div class='ck-step'>Step 3 — Moments check karo, phir clips banao</div>",
+        st.markdown("<div class='ck-step'>Step 3 — Review moments, then make clips</div>",
                     unsafe_allow_html=True)
         edited = []
         for i, m in enumerate(st.session_state.moments):
@@ -169,7 +169,7 @@ if st.session_state.video_path:
                         st.markdown(f"<span class='ck-muted'>“{m['text'][:180]}…”</span>",
                                     unsafe_allow_html=True)
                 with c3:
-                    keep = st.checkbox("Ye clip banao", value=True, key=f"keep_{i}")
+                    keep = st.checkbox("Make this clip", value=True, key=f"keep_{i}")
                     new_start = st.number_input(
                         "Start (sec)", 0.0, st.session_state.duration,
                         float(m["start"]), 1.0, key=f"start_{i}")
@@ -184,14 +184,14 @@ if st.session_state.video_path:
                                    "score": m["score"], "reason": m.get("reason", ""),
                                    "hashtags": hashtags})
 
-        if st.button("✂️ Clips banao", type="primary"):
+        if st.button("✂️ Make clips", type="primary"):
             if not edited:
-                st.warning("Koi moment select nahi hua.")
+                st.warning("No moment selected.")
             else:
                 out_dir = os.path.join(st.session_state.workdir, "clips")
                 os.makedirs(out_dir, exist_ok=True)
                 made = []
-                progress = st.progress(0.0, text="Clips ban rahe hain...")
+                progress = st.progress(0.0, text="Making clips...")
                 for idx, m in enumerate(edited):
                     name = f"clip_{idx + 1:02d}.mp4"
                     out_path = os.path.join(out_dir, name)
@@ -202,17 +202,17 @@ if st.session_state.video_path:
                         made.append({**m, "name": name, "path": out_path,
                                      "duration": round(m["end"] - m["start"])})
                     except Exception as exc:
-                        st.error(f"{name} nahi ban paya: {exc}")
+                        st.error(f"{name} failed: {exc}")
                     progress.progress((idx + 1) / len(edited),
-                                      text=f"Clips ban rahe hain... {idx + 1}/{len(edited)}")
+                                      text=f"Making clips... {idx + 1}/{len(edited)}")
                 progress.empty()
                 st.session_state.clips = made
                 if made:
-                    st.success(f"🎉 {len(made)} clips taiyaar hain!")
+                    st.success(f"🎉 {len(made)} clips are ready!")
 
     # ------------------------------------------------------ step 4: results --
     if st.session_state.clips:
-        st.markdown("<div class='ck-step'>Step 4 — Clips download karo aur post karo</div>",
+        st.markdown("<div class='ck-step'>Step 4 — Download & post your clips</div>",
                     unsafe_allow_html=True)
         for c in st.session_state.clips:
             st.markdown("<div class='ck-card'>", unsafe_allow_html=True)
@@ -226,13 +226,13 @@ if st.session_state.video_path:
                             unsafe_allow_html=True)
                 st.code(f"{c['title']}\n{c['hashtags']}", language=None)
                 with open(c["path"], "rb") as f:
-                    st.download_button(f"⬇️ {c['name']} download", f.read(),
+                    st.download_button(f"⬇️ Download {c['name']}", f.read(),
                                        file_name=c["name"], mime="video/mp4",
                                        key=f"dl_{c['name']}")
             st.markdown("</div>", unsafe_allow_html=True)
 
         # ZIP of all clips + Whop tracking sheet
-        zip_path = os.path.join(st.session_state.workdir, "clipkaro_clips.zip")
+        zip_path = os.path.join(st.session_state.workdir, "clipza_clips.zip")
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
             for c in st.session_state.clips:
                 zf.write(c["path"], c["name"])
@@ -240,11 +240,11 @@ if st.session_state.video_path:
                         clipcore.build_tracker_csv(st.session_state.clips,
                                                    st.session_state.video_name))
         with open(zip_path, "rb") as f:
-            st.download_button("📦 Sab clips + Whop tracking sheet (ZIP)", f.read(),
-                               file_name="clipkaro_clips.zip",
+            st.download_button("📦 All clips + Whop tracking sheet (ZIP)", f.read(),
+                               file_name="clipza_clips.zip",
                                mime="application/zip", type="primary")
-        st.markdown("<span class='ck-muted'>Whop par kaam aisa hoga: clip ko apne "
-                    "TikTok / Shorts / Reels par post karo, phir us ka link Whop "
-                    "campaign mein submit karo. Tracking sheet mein link aur views "
-                    "likhte jao — hisaab saaf rahega.</span>",
+        st.markdown("<span class='ck-muted'>How Whop works: post each clip to your "
+                    "TikTok / Shorts / Reels, then submit its link in the Whop "
+                    "campaign. Keep logging links and views in the tracking "
+                    "sheet — everything stays organised.</span>",
                     unsafe_allow_html=True)
