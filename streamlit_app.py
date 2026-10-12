@@ -1,4 +1,4 @@
-"""ClipKaro — AI Clipping Tool (by JONNY PRODUCTIONS)
+"""Clipza — AI Clipping Tool (by JONNY PRODUCTIONS)
 
 Upload a long video -> AI finds the best moments -> download ready 9:16 clips
 with a Whop-ready posting package (titles, hashtags, tracking sheet).
@@ -19,7 +19,7 @@ for _k in ("no_proxy", "NO_PROXY"):
     if _v and "[" in _v:
         os.environ[_k] = ",".join(p for p in _v.split(",") if "[" not in p)
 
-st.set_page_config(page_title="ClipKaro — AI Clipping Tool", page_icon="✂️", layout="wide")
+st.set_page_config(page_title="Clipza — AI Clipping Tool", page_icon="✂️", layout="wide")
 
 # ------------------------------------------------------------------- style ---
 st.markdown("""
@@ -57,7 +57,7 @@ st.markdown("""
   }
 </style>
 <div class="ck-hero">
-  <h1>✂️ ClipKaro</h1>
+  <h1>✂️ Clipza</h1>
   <p>Lambi video do — AI behtareen moments dhoond kar <b>9:16 Shorts / Reels / TikTok</b>
   clips bana dega. Whop Content Rewards ke liye ready package ke saath.</p>
 </div>
@@ -88,7 +88,7 @@ with st.sidebar:
         "Gemini API key", type="password",
         help="Free key Google AI Studio se milti hai. Na ho to basic detection khud chalegi.")
     st.markdown("---")
-    st.markdown("<span class='ck-muted'>ClipKaro by <b>JONNY PRODUCTIONS</b><br>"
+    st.markdown("<span class='ck-muted'>Clipza by <b>JONNY PRODUCTIONS</b><br>"
                 "Clean clips — koi burned-in captions nahi.</span>",
                 unsafe_allow_html=True)
 
