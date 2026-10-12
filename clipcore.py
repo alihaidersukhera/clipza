@@ -52,12 +52,42 @@ def extract_audio(video_path, out_wav):
 
 _MODEL = None
 
+# The speech model is downloaded with plain HTTPS instead of the
+# huggingface_hub downloader: hub 1.x + fsspec on some hosts crash with
+# "open() got an unexpected keyword argument 'metadata_errors'".
+_MODEL_REPO = "Systran/faster-whisper-{size}"
+_MODEL_FILES = ("config.json", "model.bin", "tokenizer.json", "vocabulary.txt")
+
+
+def _model_dir(model_size="small"):
+    import tempfile
+    path = os.path.join(tempfile.gettempdir(), "clipza-models", model_size)
+    os.makedirs(path, exist_ok=True)
+    missing = [f for f in _MODEL_FILES
+               if not os.path.exists(os.path.join(path, f))
+               or os.path.getsize(os.path.join(path, f)) == 0]
+    if missing:
+        repo = _MODEL_REPO.format(size=model_size)
+        for name in missing:
+            url = f"https://huggingface.co/{repo}/resolve/main/{name}"
+            tmp = os.path.join(path, name + ".part")
+            with urllib.request.urlopen(url, timeout=600) as resp, \
+                    open(tmp, "wb") as fh:
+                while True:
+                    chunk = resp.read(1 << 20)
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+            os.replace(tmp, os.path.join(path, name))
+    return path
+
 
 def get_model(model_size="small"):
     global _MODEL
     if _MODEL is None:
         from faster_whisper import WhisperModel
-        _MODEL = WhisperModel(model_size, device="cpu", compute_type="int8")
+        _MODEL = WhisperModel(_model_dir(model_size),
+                              device="cpu", compute_type="int8")
     return _MODEL
 
 
