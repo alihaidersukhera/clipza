@@ -9,7 +9,10 @@ import io
 import json
 import os
 import re
+import socket
 import subprocess
+import time
+import urllib.error
 import urllib.request
 import wave
 
@@ -240,8 +243,27 @@ def detect_moments_gemini(segments, api_key, count=5, duration=0.0):
            f"gemini-3.8-flash:generateContent?key={api_key}")
     req = urllib.request.Request(url, data=payload,
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    # Retry transient Google-side failures (503 overloaded, 429 rate limit,
+    # 5xx, timeouts) with backoff; fail fast on bad key / bad request.
+    data = None
+    last_err = None
+    for attempt, wait in enumerate([0, 5, 15]):
+        if wait:
+            time.sleep(wait)
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as e:
+            last_err = e
+            if e.code not in (429, 500, 502, 503, 504) or attempt == 2:
+                raise
+        except (urllib.error.URLError, TimeoutError, socket.timeout) as e:
+            last_err = e
+            if attempt == 2:
+                raise
+    if data is None:
+        raise last_err
     text = data["candidates"][0]["content"]["parts"][0]["text"]
     match = re.search(r"\[.*\]", text, re.DOTALL)
     if not match:
