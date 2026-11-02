@@ -144,7 +144,7 @@ def _window_energy(samples, rate, start, end):
     return float(np.sqrt(np.mean(chunk ** 2)) + 1e-9)
 
 
-def build_windows(segments, min_len=20.0, max_len=60.0, target_len=40.0):
+def build_windows(segments, min_len=20.0, max_len=30.0, target_len=30.0):
     """Merge consecutive transcript segments into candidate clip windows."""
     windows = []
     i = 0
@@ -229,7 +229,7 @@ def detect_moments_gemini(segments, api_key, count=5, duration=0.0):
         "You are an expert short-form video clipper for Whop Content Rewards campaigns.\n"
         f"Below is a timestamped transcript of a video ({duration:.0f} seconds long).\n"
         f"Pick the {count} MOST viral-worthy moments for TikTok / YouTube Shorts / Reels.\n"
-        "Each moment must be 20 to 60 seconds long, start on a strong hook line, and make "
+        "Each moment must be exactly 30 seconds long (end = start + 30), start on a strong hook line, and make "
         "sense on its own. Reply with ONLY a JSON array, no markdown fences, like:\n"
         '[{"start": 12, "end": 45, "title": "short catchy post title", '
         '"reason": "why this will perform", "score": 87, '
@@ -278,7 +278,8 @@ def detect_moments_gemini(segments, api_key, count=5, duration=0.0):
             continue
         if duration:
             start = max(0.0, min(start, duration - 5))
-            end = max(start + 10, min(end, duration))
+            # Each short is 30 seconds (or shorter only at the very end of the video)
+            end = min(start + 30.0, duration)
         clean.append({
             "start": start, "end": end,
             "title": str(m.get("title", "Clip"))[:120],

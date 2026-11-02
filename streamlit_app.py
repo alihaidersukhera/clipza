@@ -197,7 +197,7 @@ render_stepper(_step)
 # -------------------------------------------------------------- step 1: file --
 st.markdown("<div class='ck-step'>Step 1 — Upload your video</div>",
             unsafe_allow_html=True)
-uploaded = st.file_uploader("MP4 / MOV / MKV / WEBM (max ~200MB, up to ~60 min works best)",
+uploaded = st.file_uploader("MP4 / MOV / MKV / WEBM (max 500MB, up to ~60 min works best)",
                             type=["mp4", "mov", "mkv", "webm"])
 if uploaded is not None and uploaded.name != st.session_state.video_name:
     workdir = tempfile.mkdtemp(prefix="clipza_")
