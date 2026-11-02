@@ -202,8 +202,27 @@ uploaded = st.file_uploader("MP4 / MOV / MKV / WEBM (max 500MB, up to ~60 min wo
 if uploaded is not None and uploaded.name != st.session_state.video_name:
     workdir = tempfile.mkdtemp(prefix="clipza_")
     path = os.path.join(workdir, uploaded.name)
+    # Upload progress: Streamlit hands the file to Python only once the
+    # browser transfer finishes, so the bar below tracks the save step
+    # (bytes written / total size) — the honest % we can show in-app.
+    # It still tells the user exactly how far their video has got.
+    data = uploaded.getbuffer()
+    total_mb = len(data) / (1024 * 1024)
+    up_text = st.empty()
+    up_bar = st.progress(0.0, text="Uploading video... 0%")
+    chunk = 1024 * 1024  # 1 MB chunks
     with open(path, "wb") as f:
-        f.write(uploaded.getbuffer())
+        for offset in range(0, len(data), chunk):
+            f.write(data[offset:offset + chunk])
+            done = min(offset + chunk, len(data))
+            pct = int(done / len(data) * 100) if len(data) else 100
+            up_bar.progress(done / len(data) if len(data) else 1.0,
+                            text=f"Uploading video... {pct}% "
+                                 f"({done / (1024 * 1024):.1f} / {total_mb:.1f} MB)")
+            up_text.markdown(f"📤 Upload ho rahi hai: **{pct}%** "
+                             f"({done / (1024 * 1024):.1f} / {total_mb:.1f} MB)")
+    up_bar.progress(1.0, text="Upload complete — 100%")
+    up_text.markdown(f"✅ Upload complete: **100%** ({total_mb:.1f} MB)")
     st.session_state.update(video_path=path, video_name=uploaded.name,
                             workdir=workdir, segments=None, moments=None,
                             clips=None, duration=clipcore.probe_duration(path))
